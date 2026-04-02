@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile | IngatlanHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="main.html">IngatlanHub</a>
+      <nav class="main-nav">
+        <a href="main.html">Listings</a>
+        <a href="add-property.html">Add Property</a>
+        <a href="chat.html">Messages <span id="unreadBadge" class="unread-badge hidden">0</span></a>
+      </nav>
+      <div class="auth-area">
+        <button id="logoutBtn" class="btn ghost">Logout</button>
+        <span id="userBadge" class="user-badge"></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="section-title-row">
+        <h1>Profile Settings</h1>
+      </section>
+
+      <section class="panel">
+        <form id="profileForm" class="property-form">
+          <div class="form-grid">
+            <label>Display Name
+              <input type="text" name="displayName" required />
+            </label>
+            <label>Phone
+              <input type="text" name="phone" placeholder="+36 ..." />
+            </label>
+          </div>
+          <label>Short Bio
+            <textarea name="bio" rows="4" placeholder="Tell buyers/renters about yourself"></textarea>
+          </label>
+          <button class="btn primary" type="submit">Save Profile</button>
+          <p id="profileMessage" class="auth-message"></p>
+        </form>
+      </section>
+
+      <section class="section-title-row" style="margin-top: 1.4rem;">
+        <h2>My Listings</h2>
+      </section>
+      <section>
+        <div id="myListings" class="listings-grid"></div>
+        <p id="emptyListings" class="empty-state hidden">You have not added listings yet.</p>
+      </section>
+    </main>
+
+    <script type="module" src="assets/js/profile.js"></script>
+  </body>
+</html>

@@ -1,8 +1,10 @@
-import { fetchListingById } from "./data-service.js";
+import { createOrGetConversation, fetchListingById, incrementListingView } from "./data-service.js";
+import { onAuthChanged } from "./firebase.js";
 
 const root = document.getElementById("propertyRoot");
 const params = new URLSearchParams(window.location.search);
 const listingId = params.get("id");
+let currentUser = null;
 
 function formatPrice(price) {
   const formatted = new Intl.NumberFormat("hu-HU").format(price || 0);
@@ -108,6 +110,8 @@ function renderListing(listing) {
         <h2>Contact</h2>
         <p>${escapeHtml(listing.contactName || "N/A")}</p>
         <p>${escapeHtml(listing.contactPhone || "N/A")}</p>
+        <p class="meta">Views: ${escapeHtml(String(listing.viewsCount || 0))}</p>
+        <div id="interactionBox" class="interaction-box"></div>
       </aside>
     </section>
 
@@ -120,6 +124,58 @@ function renderListing(listing) {
       </ul>
     </section>
   `;
+}
+
+function renderInteraction(listing) {
+  const box = document.getElementById("interactionBox");
+  if (!box) {
+    return;
+  }
+
+  if (!currentUser) {
+    box.innerHTML = '<a class="btn ghost" href="auth.html">Login to message publisher</a>';
+    return;
+  }
+
+  if (currentUser.uid === listing.userId) {
+    box.innerHTML = `
+      <p class="meta">This is your listing.</p>
+      <a class="btn ghost" href="edit-property.html?id=${encodeURIComponent(listing.id)}">Edit Listing</a>
+      <a class="btn ghost" href="profile.html">View My Statistics</a>
+    `;
+    return;
+  }
+
+  if (!listing.userId) {
+    box.innerHTML = '<p class="meta">Messaging is not available for this listing.</p>';
+    return;
+  }
+
+  box.innerHTML = `
+    <p class="meta">Interested in this property? Send a message to the publisher.</p>
+    <button id="startChatBtn" class="btn primary" type="button">Message Publisher</button>
+  `;
+
+  const startChatBtn = document.getElementById("startChatBtn");
+  if (!startChatBtn) {
+    return;
+  }
+
+  startChatBtn.addEventListener("click", async () => {
+    try {
+      const conversationId = await createOrGetConversation({
+        listingId: listing.id,
+        listingTitle: listing.title,
+        ownerId: listing.userId,
+        ownerName: listing.contactName,
+        requester: currentUser
+      });
+
+      window.location.href = `chat.html?open=${encodeURIComponent(conversationId)}`;
+    } catch (error) {
+      box.innerHTML += `<p class="auth-message">${escapeHtml(error.message || "Could not start chat")}</p>`;
+    }
+  });
 }
 
 function initMap(lat, lon) {
@@ -165,7 +221,19 @@ async function bootstrap() {
     return;
   }
 
+  let viewTracked = false;
+  onAuthChanged((user) => {
+    currentUser = user;
+    renderInteraction(listing);
+
+    if (!viewTracked && (!user || user.uid !== listing.userId)) {
+      viewTracked = true;
+      incrementListingView(listing.id).catch(() => {});
+    }
+  });
+
   renderListing(listing);
+  renderInteraction(listing);
   const map = initMap(listing.lat, listing.lon);
 
   try {

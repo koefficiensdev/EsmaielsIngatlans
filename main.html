@@ -15,9 +15,11 @@
       <nav class="main-nav">
         <a href="main.html">Listings</a>
         <a href="add-property.html" id="addPropertyLink" class="hidden">Add Property</a>
+        <a href="profile.html" id="profileLink" class="hidden">Profile</a>
+        <a href="chat.html" id="chatLink" class="hidden">Messages <span id="unreadBadge" class="unread-badge hidden">0</span></a>
       </nav>
       <div class="auth-area">
-        <button id="openAuthBtn" class="btn ghost">Login / Register</button>
+        <a id="authLink" class="btn ghost" href="auth.html">Login / Register</a>
         <button id="logoutBtn" class="btn ghost hidden">Logout</button>
         <span id="userBadge" class="user-badge hidden"></span>
       </div>
@@ -29,6 +31,10 @@
           <p class="eyebrow">Hungary Real Estate</p>
           <h1>Find apartments and houses for rent or sale</h1>
           <p>Search by city, filter by type, and explore exact locations with nearby transport stops.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="main.html#listingsGrid">Explore Listings</a>
+            <a class="btn ghost" href="add-property.html">Post Property</a>
+          </div>
         </div>
       </section>
 
@@ -58,43 +64,6 @@
         <p id="emptyState" class="empty-state hidden">No listings match your search yet.</p>
       </section>
     </main>
-
-    <div id="authModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-      <div class="modal-card">
-        <button id="closeAuthModal" class="close-modal" aria-label="Close auth window">x</button>
-        <h3 id="authTitle">Login or Register</h3>
-
-        <div class="auth-switch">
-          <button id="showLoginTab" class="btn ghost">Login</button>
-          <button id="showRegisterTab" class="btn ghost">Register</button>
-        </div>
-
-        <form id="loginForm" class="auth-form">
-          <label>Email
-            <input type="email" name="email" required />
-          </label>
-          <label>Password
-            <input type="password" name="password" minlength="6" required />
-          </label>
-          <button class="btn primary" type="submit">Login</button>
-        </form>
-
-        <form id="registerForm" class="auth-form hidden">
-          <label>Display Name
-            <input type="text" name="displayName" required />
-          </label>
-          <label>Email
-            <input type="email" name="email" required />
-          </label>
-          <label>Password
-            <input type="password" name="password" minlength="6" required />
-          </label>
-          <button class="btn primary" type="submit">Create Account</button>
-        </form>
-
-        <p id="authMessage" class="auth-message"></p>
-      </div>
-    </div>
 
     <script type="module" src="assets/js/main.js"></script>
   </body>

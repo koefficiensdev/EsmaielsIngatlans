@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Messages | IngatlanHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="main.html">IngatlanHub</a>
+      <nav class="main-nav">
+        <a href="main.html">Listings</a>
+        <a href="profile.html">Profile</a>
+        <a href="chat.html">Messages <span id="unreadBadge" class="unread-badge hidden">0</span></a>
+      </nav>
+      <div class="auth-area">
+        <button id="logoutBtn" class="btn ghost">Logout</button>
+        <span id="userBadge" class="user-badge"></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="section-title-row">
+        <h1>Messages</h1>
+      </section>
+
+      <section class="chat-shell panel">
+        <aside class="chat-list">
+          <div class="chat-filters">
+            <input id="chatSearch" type="text" placeholder="Search in conversations" />
+            <select id="chatListingFilter">
+              <option value="all">All Listings</option>
+            </select>
+          </div>
+          <div id="conversationList"></div>
+        </aside>
+        <section class="chat-thread">
+          <div id="chatHeader" class="chat-header">Select a conversation</div>
+          <div id="messagesRoot" class="messages-root"></div>
+          <form id="messageForm" class="chat-form hidden">
+            <input id="messageInput" type="text" placeholder="Write a message..." required />
+            <button class="btn primary" type="submit">Send</button>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="assets/js/chat.js"></script>
+  </body>
+</html>

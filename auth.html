@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login or Register | IngatlanHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="main.html">IngatlanHub</a>
+      <nav class="main-nav">
+        <a href="main.html">Listings</a>
+      </nav>
+      <div class="auth-area">
+        <a class="btn ghost" href="main.html">Back</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="auth-shell">
+        <article class="auth-side panel">
+          <p class="eyebrow">Your Account</p>
+          <h1>Welcome to IngatlanHub</h1>
+          <p>Log in or create a profile to publish apartment and house listings for rent or sale.</p>
+          <ul class="auth-feature-list">
+            <li>Secure Firebase authentication</li>
+            <li>Create and manage your own listings</li>
+            <li>Direct contact details for buyers and renters</li>
+          </ul>
+        </article>
+
+        <article class="auth-main panel">
+          <div class="auth-switch modern-switch">
+            <button id="showLoginTab" class="btn ghost is-active" type="button">Login</button>
+            <button id="showRegisterTab" class="btn ghost" type="button">Register</button>
+          </div>
+
+          <form id="loginForm" class="auth-form">
+            <label>Email
+              <input type="email" name="email" required />
+            </label>
+            <label>Password
+              <input type="password" name="password" minlength="6" required />
+            </label>
+            <button class="btn primary" type="submit">Login</button>
+          </form>
+
+          <form id="registerForm" class="auth-form hidden">
+            <label>Display Name
+              <input type="text" name="displayName" required />
+            </label>
+            <label>Email
+              <input type="email" name="email" required />
+            </label>
+            <label>Password
+              <input type="password" name="password" minlength="6" required />
+            </label>
+            <button class="btn primary" type="submit">Create Account</button>
+          </form>
+
+          <p id="authMessage" class="auth-message"></p>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" src="assets/js/auth.js"></script>
+  </body>
+</html>

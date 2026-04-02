@@ -1,5 +1,6 @@
 import { fetchListings } from "./data-service.js";
-import { firebaseReady, loginUser, logoutUser, onAuthChanged, registerUser } from "./firebase.js";
+import { firebaseReady, logoutUser, onAuthChanged } from "./firebase.js";
+import { initUnreadBadge } from "./unread-badge.js";
 
 const listingsGrid = document.getElementById("listingsGrid");
 const listingCount = document.getElementById("listingCount");
@@ -12,18 +13,12 @@ const minPriceInput = document.getElementById("minPrice");
 const maxPriceInput = document.getElementById("maxPrice");
 const searchBtn = document.getElementById("searchBtn");
 
-const openAuthBtn = document.getElementById("openAuthBtn");
+const authLink = document.getElementById("authLink");
 const logoutBtn = document.getElementById("logoutBtn");
 const userBadge = document.getElementById("userBadge");
 const addPropertyLink = document.getElementById("addPropertyLink");
-
-const authModal = document.getElementById("authModal");
-const closeAuthModal = document.getElementById("closeAuthModal");
-const showLoginTab = document.getElementById("showLoginTab");
-const showRegisterTab = document.getElementById("showRegisterTab");
-const loginForm = document.getElementById("loginForm");
-const registerForm = document.getElementById("registerForm");
-const authMessage = document.getElementById("authMessage");
+const profileLink = document.getElementById("profileLink");
+const chatLink = document.getElementById("chatLink");
 
 let allListings = [];
 let currentUser = null;
@@ -112,28 +107,15 @@ function applyFilters() {
   renderListings(filtered);
 }
 
-function setAuthMessage(text, isError = false) {
-  authMessage.textContent = text;
-  authMessage.style.color = isError ? "var(--danger)" : "var(--muted)";
-}
-
-function showAuthModal(show) {
-  authModal.classList.toggle("hidden", !show);
-}
-
-function toggleAuthForms(showRegister) {
-  registerForm.classList.toggle("hidden", !showRegister);
-  loginForm.classList.toggle("hidden", showRegister);
-  setAuthMessage("");
-}
-
 function renderAuth(user) {
   currentUser = user;
   const isLoggedIn = Boolean(user);
-  openAuthBtn.classList.toggle("hidden", isLoggedIn);
+  authLink.classList.toggle("hidden", isLoggedIn);
   logoutBtn.classList.toggle("hidden", !isLoggedIn);
   userBadge.classList.toggle("hidden", !isLoggedIn);
   addPropertyLink.classList.toggle("hidden", !isLoggedIn);
+  profileLink.classList.toggle("hidden", !isLoggedIn);
+  chatLink.classList.toggle("hidden", !isLoggedIn);
   userBadge.textContent = isLoggedIn ? user.displayName || user.email : "";
 }
 
@@ -144,7 +126,10 @@ async function loadListings() {
 
 if (!firebaseReady) {
   setTimeout(() => {
-    setAuthMessage("Firebase keys are missing. You are seeing demo listings until you configure assets/js/firebase-config.js.");
+    const note = document.createElement("p");
+    note.className = "auth-message";
+    note.textContent = "Firebase keys are missing. You are seeing demo listings until you configure assets/js/firebase-config.js.";
+    document.querySelector("main")?.prepend(note);
   }, 150);
 }
 
@@ -163,50 +148,6 @@ typeFilter.addEventListener("change", applyFilters);
 minPriceInput.addEventListener("input", applyFilters);
 maxPriceInput.addEventListener("input", applyFilters);
 
-openAuthBtn.addEventListener("click", () => showAuthModal(true));
-closeAuthModal.addEventListener("click", () => showAuthModal(false));
-authModal.addEventListener("click", (event) => {
-  if (event.target === authModal) {
-    showAuthModal(false);
-  }
-});
-
-showLoginTab.addEventListener("click", () => toggleAuthForms(false));
-showRegisterTab.addEventListener("click", () => toggleAuthForms(true));
-
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const formData = new FormData(loginForm);
-  const email = formData.get("email");
-  const password = formData.get("password");
-
-  try {
-    await loginUser(email, password);
-    setAuthMessage("Logged in successfully.");
-    loginForm.reset();
-    showAuthModal(false);
-  } catch (error) {
-    setAuthMessage(error.message || "Login failed.", true);
-  }
-});
-
-registerForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const formData = new FormData(registerForm);
-  const displayName = formData.get("displayName");
-  const email = formData.get("email");
-  const password = formData.get("password");
-
-  try {
-    await registerUser(displayName, email, password);
-    setAuthMessage("Account created. You are now logged in.");
-    registerForm.reset();
-    showAuthModal(false);
-  } catch (error) {
-    setAuthMessage(error.message || "Registration failed.", true);
-  }
-});
-
 logoutBtn.addEventListener("click", async () => {
   if (!currentUser) {
     return;
@@ -215,3 +156,4 @@ logoutBtn.addEventListener("click", async () => {
 });
 
 loadListings();
+initUnreadBadge();
