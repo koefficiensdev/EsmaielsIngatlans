@@ -9,6 +9,43 @@ const listingId = params.get("id");
 let currentUser = null;
 let currentListing = null;
 
+function parseOptionalNumber(value) {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return null;
+  }
+  const parsed = Number(text);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseCoordinate(value) {
+  const normalized = String(value ?? "").trim().replace(",", ".");
+  if (!normalized) {
+    return NaN;
+  }
+  return Number(normalized);
+}
+
+function parseTriState(value) {
+  if (value === "yes") {
+    return true;
+  }
+  if (value === "no") {
+    return false;
+  }
+  return null;
+}
+
+function toTriStateValue(value) {
+  if (value === true) {
+    return "yes";
+  }
+  if (value === false) {
+    return "no";
+  }
+  return "any";
+}
+
 function setMessage(text, isError = false) {
   editMessage.textContent = text;
   editMessage.style.color = isError ? "var(--danger)" : "var(--muted)";
@@ -51,6 +88,16 @@ function fillForm(listing) {
   form.elements.namedItem("address").value = listing.address || "";
   form.elements.namedItem("sizeM2").value = listing.sizeM2 || 0;
   form.elements.namedItem("rooms").value = listing.rooms || 0;
+  form.elements.namedItem("bathrooms").value = listing.bathrooms ?? "";
+  form.elements.namedItem("floor").value = listing.floor ?? "";
+  form.elements.namedItem("yearBuilt").value = listing.yearBuilt ?? "";
+  form.elements.namedItem("condition").value = listing.condition || "";
+  form.elements.namedItem("heating").value = listing.heating || "";
+  form.elements.namedItem("energyRating").value = listing.energyRating || "";
+  form.elements.namedItem("furnished").value = toTriStateValue(listing.furnished);
+  form.elements.namedItem("parking").value = toTriStateValue(listing.parking);
+  form.elements.namedItem("balcony").value = toTriStateValue(listing.balcony);
+  form.elements.namedItem("petsAllowed").value = toTriStateValue(listing.petsAllowed);
   form.elements.namedItem("lat").value = listing.lat || 0;
   form.elements.namedItem("lon").value = listing.lon || 0;
   form.elements.namedItem("contactName").value = listing.contactName || "";
@@ -104,11 +151,26 @@ form.addEventListener("submit", async (event) => {
     address: formData.get("address")?.toString().trim(),
     sizeM2: Number(formData.get("sizeM2") || 0),
     rooms: Number(formData.get("rooms") || 0),
-    lat: Number(formData.get("lat") || 0),
-    lon: Number(formData.get("lon") || 0),
+    bathrooms: parseOptionalNumber(formData.get("bathrooms")),
+    floor: parseOptionalNumber(formData.get("floor")),
+    yearBuilt: parseOptionalNumber(formData.get("yearBuilt")),
+    condition: formData.get("condition")?.toString() || "",
+    heating: formData.get("heating")?.toString() || "",
+    energyRating: formData.get("energyRating")?.toString() || "",
+    furnished: parseTriState(formData.get("furnished")?.toString()),
+    parking: parseTriState(formData.get("parking")?.toString()),
+    balcony: parseTriState(formData.get("balcony")?.toString()),
+    petsAllowed: parseTriState(formData.get("petsAllowed")?.toString()),
+    lat: parseCoordinate(formData.get("lat")),
+    lon: parseCoordinate(formData.get("lon")),
     contactName: formData.get("contactName")?.toString().trim(),
     contactPhone: formData.get("contactPhone")?.toString().trim()
   };
+
+  if (!Number.isFinite(payload.lat) || !Number.isFinite(payload.lon)) {
+    setMessage("Please enter valid latitude/longitude values (comma or dot both work).", true);
+    return;
+  }
 
   const imageInput = form.elements.namedItem("images");
   const imageFiles = imageInput?.files ? Array.from(imageInput.files) : [];

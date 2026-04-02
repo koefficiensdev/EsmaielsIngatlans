@@ -7,22 +7,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="assets/css/styles.css" />
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="main.html">IngatlanHub</a>
       <nav class="main-nav">
-        <a href="main.html">Back to Listings</a>
+        <a href="main.html">Listings</a>
+        <a href="add-property.html" id="addPropertyLink" class="hidden">Add Property</a>
+        <a href="profile.html" id="profileLink" class="hidden">Profile</a>
+        <a href="chat.html" id="chatLink" class="hidden">Messages <span id="unreadBadge" class="unread-badge hidden">0</span></a>
       </nav>
+      <div class="auth-area">
+        <a id="authLink" class="btn ghost" href="auth.html">Login / Register</a>
+        <button id="logoutBtn" class="btn ghost hidden">Logout</button>
+        <span id="userBadge" class="user-badge hidden"></span>
+      </div>
     </header>
 
     <main id="propertyRoot">
       <p>Loading property details...</p>
     </main>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script type="module" src="assets/js/property.js"></script>
   </body>
 </html>

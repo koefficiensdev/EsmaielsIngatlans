@@ -13,7 +13,6 @@
     <header class="site-header">
       <a class="brand" href="main.html">IngatlanHub</a>
       <nav class="main-nav">
-        <a href="main.html">Listings</a>
         <a href="add-property.html" id="addPropertyLink" class="hidden">Add Property</a>
         <a href="profile.html" id="profileLink" class="hidden">Profile</a>
         <a href="chat.html" id="chatLink" class="hidden">Messages <span id="unreadBadge" class="unread-badge hidden">0</span></a>
@@ -52,6 +51,73 @@
         </select>
         <input id="minPrice" type="number" min="0" placeholder="Min Price" />
         <input id="maxPrice" type="number" min="0" placeholder="Max Price" />
+        <select id="sortBy">
+          <option value="newest">Sort: Newest</option>
+          <option value="priceAsc">Price: Low to High</option>
+          <option value="priceDesc">Price: High to Low</option>
+          <option value="sizeDesc">Size: Largest</option>
+          <option value="viewsDesc">Most Viewed</option>
+        </select>
+        <button id="toggleAdvancedFilters" class="btn ghost" type="button">More Filters</button>
+        <div id="advancedFilters" class="advanced-filters hidden">
+          <input id="minSize" type="number" min="0" placeholder="Min Size (m2)" />
+          <input id="maxSize" type="number" min="0" placeholder="Max Size (m2)" />
+          <input id="minRooms" type="number" min="0" step="0.5" placeholder="Min Rooms" />
+          <input id="maxRooms" type="number" min="0" step="0.5" placeholder="Max Rooms" />
+          <input id="minBathrooms" type="number" min="0" step="0.5" placeholder="Min Bathrooms" />
+          <input id="maxBathrooms" type="number" min="0" step="0.5" placeholder="Max Bathrooms" />
+          <input id="minFloor" type="number" min="0" placeholder="Min Floor" />
+          <input id="maxFloor" type="number" min="0" placeholder="Max Floor" />
+          <input id="minYearBuilt" type="number" min="1800" placeholder="Min Year Built" />
+          <input id="maxYearBuilt" type="number" min="1800" placeholder="Max Year Built" />
+          <select id="conditionFilter">
+            <option value="all">Any Condition</option>
+            <option value="new">New</option>
+            <option value="renovated">Renovated</option>
+            <option value="good">Good</option>
+            <option value="needs-renovation">Needs Renovation</option>
+          </select>
+          <select id="heatingFilter">
+            <option value="all">Any Heating</option>
+            <option value="gas">Gas</option>
+            <option value="electric">Electric</option>
+            <option value="district">District Heating</option>
+            <option value="heat-pump">Heat Pump</option>
+            <option value="other">Other</option>
+          </select>
+          <select id="energyRatingFilter">
+            <option value="all">Any Energy Rating</option>
+            <option value="A++">A++</option>
+            <option value="A+">A+</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="G">G</option>
+          </select>
+          <select id="furnishedFilter">
+            <option value="any">Furnished: Any</option>
+            <option value="yes">Furnished</option>
+            <option value="no">Not Furnished</option>
+          </select>
+          <select id="parkingFilter">
+            <option value="any">Parking: Any</option>
+            <option value="yes">With Parking</option>
+            <option value="no">No Parking</option>
+          </select>
+          <select id="balconyFilter">
+            <option value="any">Balcony: Any</option>
+            <option value="yes">With Balcony</option>
+            <option value="no">No Balcony</option>
+          </select>
+          <select id="petsFilter">
+            <option value="any">Pets: Any</option>
+            <option value="yes">Pets Allowed</option>
+            <option value="no">No Pets</option>
+          </select>
+        </div>
         <button id="searchBtn" class="btn primary">Search</button>
       </section>
 

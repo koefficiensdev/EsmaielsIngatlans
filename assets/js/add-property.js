@@ -16,6 +16,25 @@ const addressInput = form.elements.namedItem("address");
 let currentUser = null;
 let isGeocoded = false;
 
+function parseOptionalNumber(value) {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return null;
+  }
+  const parsed = Number(text);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseTriState(value) {
+  if (value === "yes") {
+    return true;
+  }
+  if (value === "no") {
+    return false;
+  }
+  return null;
+}
+
 console.log("Add Property page loaded. Firebase ready:", firebaseReady);
 
 async function uploadImagesToServer(files, userId) {
@@ -158,6 +177,16 @@ form.addEventListener("submit", async (event) => {
     address: formData.get("address")?.toString().trim(),
     sizeM2: Number(formData.get("sizeM2") || 0),
     rooms: Number(formData.get("rooms") || 0),
+    bathrooms: parseOptionalNumber(formData.get("bathrooms")),
+    floor: parseOptionalNumber(formData.get("floor")),
+    yearBuilt: parseOptionalNumber(formData.get("yearBuilt")),
+    condition: formData.get("condition")?.toString() || "",
+    heating: formData.get("heating")?.toString() || "",
+    energyRating: formData.get("energyRating")?.toString() || "",
+    furnished: parseTriState(formData.get("furnished")?.toString()),
+    parking: parseTriState(formData.get("parking")?.toString()),
+    balcony: parseTriState(formData.get("balcony")?.toString()),
+    petsAllowed: parseTriState(formData.get("petsAllowed")?.toString()),
     lat: Number(formData.get("lat") || 0),
     lon: Number(formData.get("lon") || 0),
     contactName: formData.get("contactName")?.toString().trim(),

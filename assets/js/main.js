@@ -11,6 +11,26 @@ const modeFilter = document.getElementById("modeFilter");
 const typeFilter = document.getElementById("typeFilter");
 const minPriceInput = document.getElementById("minPrice");
 const maxPriceInput = document.getElementById("maxPrice");
+const sortBy = document.getElementById("sortBy");
+const toggleAdvancedFiltersBtn = document.getElementById("toggleAdvancedFilters");
+const advancedFilters = document.getElementById("advancedFilters");
+const minSizeInput = document.getElementById("minSize");
+const maxSizeInput = document.getElementById("maxSize");
+const minRoomsInput = document.getElementById("minRooms");
+const maxRoomsInput = document.getElementById("maxRooms");
+const minBathroomsInput = document.getElementById("minBathrooms");
+const maxBathroomsInput = document.getElementById("maxBathrooms");
+const minFloorInput = document.getElementById("minFloor");
+const maxFloorInput = document.getElementById("maxFloor");
+const minYearBuiltInput = document.getElementById("minYearBuilt");
+const maxYearBuiltInput = document.getElementById("maxYearBuilt");
+const conditionFilter = document.getElementById("conditionFilter");
+const heatingFilter = document.getElementById("heatingFilter");
+const energyRatingFilter = document.getElementById("energyRatingFilter");
+const furnishedFilter = document.getElementById("furnishedFilter");
+const parkingFilter = document.getElementById("parkingFilter");
+const balconyFilter = document.getElementById("balconyFilter");
+const petsFilter = document.getElementById("petsFilter");
 const searchBtn = document.getElementById("searchBtn");
 
 const authLink = document.getElementById("authLink");
@@ -87,24 +107,82 @@ function renderListings(items) {
 }
 
 function applyFilters() {
+  const numberOr = (value, fallback) => {
+    if (value === "" || value === null || typeof value === "undefined") {
+      return fallback;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
+  const triStateMatch = (filterValue, listingValue) => {
+    if (filterValue === "any") {
+      return true;
+    }
+    if (filterValue === "yes") {
+      return listingValue === true;
+    }
+    return listingValue === false;
+  };
+
   const searchTerm = searchInput.value.trim().toLowerCase();
   const selectedMode = modeFilter.value;
   const selectedType = typeFilter.value;
   const minPrice = Number(minPriceInput.value || 0);
   const maxPrice = Number(maxPriceInput.value || Infinity);
+  const minSize = numberOr(minSizeInput.value, 0);
+  const maxSize = numberOr(maxSizeInput.value, Infinity);
+  const minRooms = numberOr(minRoomsInput.value, 0);
+  const maxRooms = numberOr(maxRoomsInput.value, Infinity);
+  const minBathrooms = numberOr(minBathroomsInput.value, 0);
+  const maxBathrooms = numberOr(maxBathroomsInput.value, Infinity);
+  const minFloor = numberOr(minFloorInput.value, 0);
+  const maxFloor = numberOr(maxFloorInput.value, Infinity);
+  const minYearBuilt = numberOr(minYearBuiltInput.value, 0);
+  const maxYearBuilt = numberOr(maxYearBuiltInput.value, Infinity);
 
   const filtered = allListings.filter((listing) => {
     const searchable = `${listing.title} ${listing.city} ${listing.district || ""} ${listing.address || ""}`.toLowerCase();
     const modeMatch = selectedMode === "all" || listing.mode === selectedMode;
     const typeMatch = selectedType === "all" || listing.type === selectedType;
     const price = Number(listing.price || 0);
+    const size = Number(listing.sizeM2 || 0);
+    const rooms = Number(listing.rooms || 0);
+    const bathrooms = Number(listing.bathrooms || 0);
+    const floor = Number(listing.floor || 0);
+    const yearBuilt = Number(listing.yearBuilt || 0);
     const priceMatch = price >= minPrice && price <= maxPrice;
+    const sizeMatch = size >= minSize && size <= maxSize;
+    const roomMatch = rooms >= minRooms && rooms <= maxRooms;
+    const bathroomMatch = bathrooms >= minBathrooms && bathrooms <= maxBathrooms;
+    const floorMatch = floor >= minFloor && floor <= maxFloor;
+    const yearBuiltMatch = yearBuilt >= minYearBuilt && yearBuilt <= maxYearBuilt;
+    const conditionMatch = conditionFilter.value === "all" || listing.condition === conditionFilter.value;
+    const heatingMatch = heatingFilter.value === "all" || listing.heating === heatingFilter.value;
+    const energyRatingMatch = energyRatingFilter.value === "all" || listing.energyRating === energyRatingFilter.value;
+    const furnishedMatch = triStateMatch(furnishedFilter.value, listing.furnished);
+    const parkingMatch = triStateMatch(parkingFilter.value, listing.parking);
+    const balconyMatch = triStateMatch(balconyFilter.value, listing.balcony);
+    const petsMatch = triStateMatch(petsFilter.value, listing.petsAllowed);
     const textMatch = !searchTerm || searchable.includes(searchTerm);
 
-    return modeMatch && typeMatch && priceMatch && textMatch;
+    return modeMatch && typeMatch && priceMatch && sizeMatch && roomMatch && bathroomMatch && floorMatch && yearBuiltMatch && conditionMatch && heatingMatch && energyRatingMatch && furnishedMatch && parkingMatch && balconyMatch && petsMatch && textMatch;
   });
 
-  renderListings(filtered);
+  const sorted = [...filtered];
+  if (sortBy.value === "priceAsc") {
+    sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+  } else if (sortBy.value === "priceDesc") {
+    sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+  } else if (sortBy.value === "sizeDesc") {
+    sorted.sort((a, b) => Number(b.sizeM2 || 0) - Number(a.sizeM2 || 0));
+  } else if (sortBy.value === "viewsDesc") {
+    sorted.sort((a, b) => Number(b.viewsCount || 0) - Number(a.viewsCount || 0));
+  } else {
+    sorted.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  }
+
+  renderListings(sorted);
 }
 
 function renderAuth(user) {
@@ -147,6 +225,36 @@ modeFilter.addEventListener("change", applyFilters);
 typeFilter.addEventListener("change", applyFilters);
 minPriceInput.addEventListener("input", applyFilters);
 maxPriceInput.addEventListener("input", applyFilters);
+sortBy.addEventListener("change", applyFilters);
+
+[
+  minSizeInput,
+  maxSizeInput,
+  minRoomsInput,
+  maxRoomsInput,
+  minBathroomsInput,
+  maxBathroomsInput,
+  minFloorInput,
+  maxFloorInput,
+  minYearBuiltInput,
+  maxYearBuiltInput,
+  conditionFilter,
+  heatingFilter,
+  energyRatingFilter,
+  furnishedFilter,
+  parkingFilter,
+  balconyFilter,
+  petsFilter
+].forEach((control) => {
+  control.addEventListener("change", applyFilters);
+  control.addEventListener("input", applyFilters);
+});
+
+toggleAdvancedFiltersBtn.addEventListener("click", () => {
+  const willShow = advancedFilters.classList.contains("hidden");
+  advancedFilters.classList.toggle("hidden", !willShow);
+  toggleAdvancedFiltersBtn.textContent = willShow ? "Hide Extra Filters" : "More Filters";
+});
 
 logoutBtn.addEventListener("click", async () => {
   if (!currentUser) {
