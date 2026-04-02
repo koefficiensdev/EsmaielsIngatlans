@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IngatlanHub | Homes for Rent and Sale</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="main.html">IngatlanHub</a>
+      <nav class="main-nav">
+        <a href="main.html">Listings</a>
+        <a href="add-property.html" id="addPropertyLink" class="hidden">Add Property</a>
+      </nav>
+      <div class="auth-area">
+        <button id="openAuthBtn" class="btn ghost">Login / Register</button>
+        <button id="logoutBtn" class="btn ghost hidden">Logout</button>
+        <span id="userBadge" class="user-badge hidden"></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Hungary Real Estate</p>
+          <h1>Find apartments and houses for rent or sale</h1>
+          <p>Search by city, filter by type, and explore exact locations with nearby transport stops.</p>
+        </div>
+      </section>
+
+      <section class="search-panel">
+        <input id="searchInput" type="text" placeholder="Search by city, district, address, or title" />
+        <select id="modeFilter">
+          <option value="all">Rent + Sale</option>
+          <option value="rent">For Rent</option>
+          <option value="sale">For Sale</option>
+        </select>
+        <select id="typeFilter">
+          <option value="all">All Types</option>
+          <option value="apartment">Apartment</option>
+          <option value="house">House</option>
+        </select>
+        <input id="minPrice" type="number" min="0" placeholder="Min Price" />
+        <input id="maxPrice" type="number" min="0" placeholder="Max Price" />
+        <button id="searchBtn" class="btn primary">Search</button>
+      </section>
+
+      <section>
+        <div class="section-title-row">
+          <h2>Latest Listings</h2>
+          <span id="listingCount"></span>
+        </div>
+        <div id="listingsGrid" class="listings-grid"></div>
+        <p id="emptyState" class="empty-state hidden">No listings match your search yet.</p>
+      </section>
+    </main>
+
+    <div id="authModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-card">
+        <button id="closeAuthModal" class="close-modal" aria-label="Close auth window">x</button>
+        <h3 id="authTitle">Login or Register</h3>
+
+        <div class="auth-switch">
+          <button id="showLoginTab" class="btn ghost">Login</button>
+          <button id="showRegisterTab" class="btn ghost">Register</button>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <label>Email
+            <input type="email" name="email" required />
+          </label>
+          <label>Password
+            <input type="password" name="password" minlength="6" required />
+          </label>
+          <button class="btn primary" type="submit">Login</button>
+        </form>
+
+        <form id="registerForm" class="auth-form hidden">
+          <label>Display Name
+            <input type="text" name="displayName" required />
+          </label>
+          <label>Email
+            <input type="email" name="email" required />
+          </label>
+          <label>Password
+            <input type="password" name="password" minlength="6" required />
+          </label>
+          <button class="btn primary" type="submit">Create Account</button>
+        </form>
+
+        <p id="authMessage" class="auth-message"></p>
+      </div>
+    </div>
+
+    <script type="module" src="assets/js/main.js"></script>
+  </body>
+</html>
