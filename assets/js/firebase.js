@@ -30,14 +30,10 @@ let db = null;
 let storage = null;
 
 if (firebaseReady) {
-  console.log("🔥 Initializing Firebase with config:", firebaseConfig.projectId);
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
-  console.log("✓ Firebase initialized. Auth, Firestore, and Storage ready.");
-} else {
-  console.warn("⚠️ Firebase config is incomplete. Check assets/js/firebase-config.js");
 }
 
 export { auth, db, storage };

@@ -58,19 +58,22 @@ function normalizeListing(id, data) {
 }
 
 export async function fetchListings() {
+  const curatedListings = sampleListings.filter((listing) => !listing.status || listing.status === "active");
+
   if (!firebaseReady || !db) {
-    return sampleListings.filter((listing) => !listing.status || listing.status === "active");
+    return curatedListings;
   }
 
   try {
     const listingsQuery = query(collection(db, LISTINGS_COLLECTION), orderBy("createdAt", "desc"), limit(120));
     const snapshot = await getDocs(listingsQuery);
-    return snapshot.docs
+    const liveListings = snapshot.docs
       .map((entry) => normalizeListing(entry.id, entry.data()))
       .filter((listing) => listing.status === "active");
+
+    return [...liveListings, ...curatedListings].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
   } catch (error) {
-    console.error("Failed to fetch Firestore listings, using demo data.", error);
-    return sampleListings.filter((listing) => !listing.status || listing.status === "active");
+    return curatedListings;
   }
 }
 
@@ -86,7 +89,7 @@ export async function fetchListingById(id) {
   const docRef = doc(db, LISTINGS_COLLECTION, id);
   const listingDoc = await getDoc(docRef);
   if (!listingDoc.exists()) {
-    return null;
+    return sampleListings.find((listing) => listing.id === id) || null;
   }
 
   return normalizeListing(listingDoc.id, listingDoc.data());
@@ -96,8 +99,6 @@ export async function createListing(payload, imageUrls, user) {
   if (!firebaseReady || !db) {
     throw new Error("Firebase is not configured. Add your project keys in assets/js/firebase-config.js.");
   }
-
-  console.log("Starting listing creation...");
 
   const listing = {
     ...payload,
@@ -109,14 +110,10 @@ export async function createListing(payload, imageUrls, user) {
     createdAt: serverTimestamp()
   };
 
-  console.log("Writing to Firestore:", listing);
-  
   try {
     const createdRef = await addDoc(collection(db, LISTINGS_COLLECTION), listing);
-    console.log("Listing written successfully:", createdRef.id);
     return createdRef.id;
   } catch (error) {
-    console.error("Firestore write failed:", error);
     throw new Error(`Could not save listing: ${error.message}`);
   }
 }

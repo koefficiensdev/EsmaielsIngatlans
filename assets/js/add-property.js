@@ -1,5 +1,5 @@
 import { createListing } from "./data-service.js";
-import { firebaseReady, logoutUser, onAuthChanged } from "./firebase.js";
+import { auth, firebaseReady, logoutUser, onAuthChanged } from "./firebase.js";
 
 const form = document.getElementById("addPropertyForm");
 const formMessage = document.getElementById("formMessage");
@@ -35,11 +35,14 @@ function parseTriState(value) {
   return null;
 }
 
-console.log("Add Property page loaded. Firebase ready:", firebaseReady);
-
 async function uploadImagesToServer(files, userId) {
   if (!files.length) {
     return [];
+  }
+
+  const idToken = await auth?.currentUser?.getIdToken();
+  if (!idToken) {
+    throw new Error("You must be logged in to upload images.");
   }
 
   const uploadFormData = new FormData();
@@ -51,7 +54,10 @@ async function uploadImagesToServer(files, userId) {
 
   const response = await fetch("upload.php", {
     method: "POST",
-    body: uploadFormData
+    body: uploadFormData,
+    headers: {
+      Authorization: `Bearer ${idToken}`
+    }
   });
 
   let responseData = null;
@@ -151,16 +157,12 @@ logoutBtn.addEventListener("click", async () => {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  console.log("=== Form Submit Attempt ===");
-
   if (!firebaseReady) {
-    console.error("Firebase not ready");
     setMessage("Firebase is not configured. Please add keys in assets/js/firebase-config.js.", true);
     return;
   }
 
   if (!currentUser) {
-    console.error("Not logged in");
     setMessage("You must be logged in to create a listing.", true);
     return;
   }
@@ -196,16 +198,12 @@ form.addEventListener("submit", async (event) => {
   const imageInput = form.elements.namedItem("images");
   const imageFiles = imageInput?.files ? Array.from(imageInput.files) : [];
 
-  console.log("Form payload:", payload);
-
   if (!payload.title || !payload.description || !payload.city || !payload.address) {
-    console.error("Missing required fields", { title: payload.title, description: payload.description, city: payload.city, address: payload.address });
     setMessage("Please fill in all required fields.", true);
     return;
   }
 
   if (!Number.isFinite(payload.lat) || !Number.isFinite(payload.lon) || payload.lat === 0 || payload.lon === 0) {
-    console.error("Invalid coordinates", { lat: payload.lat, lon: payload.lon });
     setMessage("❌ Please click 'Find Coordinates' to locate your address on the map.", true);
     geocodeMessage.textContent = "⚠️ Coordinates required to publish";
     return;
@@ -213,22 +211,16 @@ form.addEventListener("submit", async (event) => {
 
   try {
     setMessage("Publishing listing...");
-    console.log("Creating listing with payload:", payload);
-    console.log("User:", currentUser.uid, currentUser.email);
-    console.log("Firebase ready:", firebaseReady);
-    console.log("Image files:", imageFiles.length);
 
     let imageUrls = [];
     if (imageFiles.length > 0) {
       setMessage("Uploading images to server...");
       imageUrls = await uploadImagesToServer(imageFiles, currentUser.uid);
-      console.log("Server image upload complete:", imageUrls);
     }
 
     setMessage("Saving listing...");
     const listingId = await createListing(payload, imageUrls, currentUser);
     
-    console.log("Listing created successfully:", listingId);
     setMessage("✓ Listing published! Redirecting...");
     form.reset();
     isGeocoded = false;
@@ -236,7 +228,6 @@ form.addEventListener("submit", async (event) => {
       window.location.href = `property.html?id=${encodeURIComponent(listingId)}`;
     }, 500);
   } catch (error) {
-    console.error("Error publishing listing:", error);
     setMessage(`❌ ${error.message || "Failed to publish listing. Check browser console for details."}`, true);
   }
 });

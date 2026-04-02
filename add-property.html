@@ -132,18 +132,18 @@
           </label>
         </div>
 
-        <div style="display: grid; gap: 0.7rem;">
+        <div class="geo-panel">
           <label>Get Exact Address Location
-            <p style="font-size: 0.85rem; color: var(--muted); margin: 0.3rem 0 0;">Enter street address above, then click the button below to auto-fill coordinates</p>
-            <button id="geocodeBtn" type="button" class="btn ghost" style="width: 100%;">Find Coordinates</button>
+            <p class="field-note">Enter street address above, then click the button below to auto-fill coordinates</p>
+            <button id="geocodeBtn" type="button" class="btn ghost full-width">Find Coordinates</button>
           </label>
           <label>Latitude
-            <input name="lat" type="number" step="0.000001" readonly style="background: #f0f4f8; cursor: not-allowed;" />
+            <input name="lat" type="number" step="0.000001" readonly class="readonly-field" />
           </label>
           <label>Longitude
-            <input name="lon" type="number" step="0.000001" readonly style="background: #f0f4f8; cursor: not-allowed;" />
+            <input name="lon" type="number" step="0.000001" readonly class="readonly-field" />
           </label>
-          <p id="geocodeMessage" style="font-size: 0.9rem; min-height: 1rem; color: var(--muted);"></p>
+          <p id="geocodeMessage" class="field-feedback"></p>
         </div>
 
         <div class="form-grid">
@@ -155,7 +155,7 @@
           </label>
           <label>Images (Optional)
             <input name="images" type="file" multiple accept="image/*" />
-            <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem;">Images are uploaded to the server locally through PHP. Run the site through a PHP server so uploads work.</p>
+            <p class="field-note compact-note">Images are uploaded to the server locally through PHP. Run the site through a PHP server so uploads work.</p>
           </label>
         </div>
 

@@ -1,5 +1,5 @@
 import { fetchListingById, updateListing } from "./data-service.js";
-import { onAuthChanged } from "./firebase.js";
+import { auth, onAuthChanged } from "./firebase.js";
 
 const form = document.getElementById("editPropertyForm");
 const editMessage = document.getElementById("editMessage");
@@ -56,6 +56,11 @@ async function uploadImagesToServer(files, userId) {
     return [];
   }
 
+  const idToken = await auth?.currentUser?.getIdToken();
+  if (!idToken) {
+    throw new Error("You must be logged in to upload images.");
+  }
+
   const uploadFormData = new FormData();
   uploadFormData.append("userId", userId);
 
@@ -65,7 +70,10 @@ async function uploadImagesToServer(files, userId) {
 
   const response = await fetch("upload.php", {
     method: "POST",
-    body: uploadFormData
+    body: uploadFormData,
+    headers: {
+      Authorization: `Bearer ${idToken}`
+    }
   });
 
   const responseData = await response.json();
