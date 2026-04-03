@@ -7,6 +7,24 @@ const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
 const authMessage = document.getElementById("authMessage");
 let authFlowInProgress = false;
+const PROFILE_SEEN_CACHE_KEY = "profile-seen-v1";
+
+function readSeenProfiles() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PROFILE_SEEN_CACHE_KEY) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function writeSeenProfiles(value) {
+  try {
+    window.localStorage.setItem(PROFILE_SEEN_CACHE_KEY, JSON.stringify(value));
+  } catch (error) {
+    // Ignore localStorage write issues.
+  }
+}
 
 function setAuthMessage(text, isError = false) {
   authMessage.textContent = text;
@@ -52,8 +70,15 @@ async function ensureUserProfileDocument(user) {
     return;
   }
 
+  const seenProfiles = readSeenProfiles();
+  if (seenProfiles[user.uid]) {
+    return;
+  }
+
   const existingProfile = await fetchUserProfile(user.uid);
   if (existingProfile) {
+    seenProfiles[user.uid] = true;
+    writeSeenProfiles(seenProfiles);
     return;
   }
 
@@ -62,6 +87,9 @@ async function ensureUserProfileDocument(user) {
     email: user.email || "",
     isAdmin: false
   });
+
+  seenProfiles[user.uid] = true;
+  writeSeenProfiles(seenProfiles);
 }
 
 if (!firebaseReady) {

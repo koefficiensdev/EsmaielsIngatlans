@@ -21,6 +21,14 @@ import { sampleListings } from "./sample-data.js";
 const LISTINGS_COLLECTION = "listings";
 const USERS_COLLECTION = "users";
 const CONVERSATIONS_COLLECTION = "conversations";
+const PROFILE_CACHE_TTL_MS = 60 * 1000;
+const LISTINGS_CACHE_TTL_MS = 45 * 1000;
+const profileCache = new Map();
+let listingsCache = { value: null, fetchedAt: 0 };
+
+function isFresh(timestamp, ttl) {
+  return Number(timestamp || 0) + ttl > Date.now();
+}
 
 function normalizeListing(id, data) {
   return {
@@ -60,7 +68,12 @@ function normalizeListing(id, data) {
 export async function fetchListings() {
   const curatedListings = sampleListings.filter((listing) => !listing.status || listing.status === "active");
 
+  if (listingsCache.value && isFresh(listingsCache.fetchedAt, LISTINGS_CACHE_TTL_MS)) {
+    return listingsCache.value;
+  }
+
   if (!firebaseReady || !db) {
+    listingsCache = { value: curatedListings, fetchedAt: Date.now() };
     return curatedListings;
   }
 
@@ -78,10 +91,14 @@ export async function fetchListings() {
       mergedById.set(listing.id, listing);
     });
 
-    return Array.from(mergedById.values())
+    const mergedListings = Array.from(mergedById.values())
       .filter((listing) => listing.status === "active")
       .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+    listingsCache = { value: mergedListings, fetchedAt: Date.now() };
+    return mergedListings;
   } catch (error) {
+    listingsCache = { value: curatedListings, fetchedAt: Date.now() };
     return curatedListings;
   }
 }
@@ -280,6 +297,12 @@ export async function upsertUserProfile(userId, profileData) {
     },
     { merge: true }
   );
+
+  const previous = profileCache.get(userId)?.value || {};
+  profileCache.set(userId, {
+    value: { ...previous, ...profileData },
+    fetchedAt: Date.now()
+  });
 }
 
 export async function fetchUserProfile(userId) {
@@ -287,13 +310,21 @@ export async function fetchUserProfile(userId) {
     return null;
   }
 
+  const cached = profileCache.get(userId);
+  if (cached && isFresh(cached.fetchedAt, PROFILE_CACHE_TTL_MS)) {
+    return cached.value;
+  }
+
   const profileRef = doc(db, USERS_COLLECTION, userId);
   const profileDoc = await getDoc(profileRef);
   if (!profileDoc.exists()) {
+    profileCache.set(userId, { value: null, fetchedAt: Date.now() });
     return null;
   }
 
-  return profileDoc.data();
+  const profileData = profileDoc.data();
+  profileCache.set(userId, { value: profileData, fetchedAt: Date.now() });
+  return profileData;
 }
 
 export async function fetchFavoriteListingIds(userId) {

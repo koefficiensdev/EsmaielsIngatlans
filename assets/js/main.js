@@ -44,6 +44,7 @@ const postPropertyBtn = document.getElementById("postPropertyBtn");
 let allListings = [];
 let currentUser = null;
 let favoriteListingIds = new Set();
+const LISTINGS_WARM_CACHE_KEY = "homepage-listings-cache-v1";
 
 function formatPrice(price) {
   const formatted = new Intl.NumberFormat("en-ET").format(price || 0);
@@ -248,8 +249,26 @@ async function renderAuth(user) {
 }
 
 async function loadListings() {
+  try {
+    const cachedRaw = window.localStorage.getItem(LISTINGS_WARM_CACHE_KEY);
+    if (cachedRaw) {
+      const cachedListings = JSON.parse(cachedRaw);
+      if (Array.isArray(cachedListings) && cachedListings.length) {
+        allListings = cachedListings;
+        renderListings(allListings);
+      }
+    }
+  } catch (error) {
+    // Ignore malformed cache and continue with live fetch.
+  }
+
   allListings = await fetchListings();
   renderListings(allListings);
+  try {
+    window.localStorage.setItem(LISTINGS_WARM_CACHE_KEY, JSON.stringify(allListings));
+  } catch (error) {
+    // Cache write failures are non-blocking.
+  }
 }
 
 if (!firebaseReady) {
@@ -262,8 +281,7 @@ if (!firebaseReady) {
 }
 
 onAuthChanged(async (user) => {
-  await syncFavorites(user);
-  await renderAuth(user);
+  await Promise.all([syncFavorites(user), renderAuth(user)]);
   applyFilters();
 });
 
