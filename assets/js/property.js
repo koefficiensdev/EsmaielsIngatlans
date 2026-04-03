@@ -1,4 +1,4 @@
-import { createOrGetConversation, fetchListingById, incrementListingView } from "./data-service.js";
+import { createOrGetConversation, fetchFavoriteListingIds, fetchListingById, incrementListingView, isUserAdmin, toggleFavoriteListing } from "./data-service.js";
 import { logoutUser, onAuthChanged } from "./firebase.js";
 import { initUnreadBadge } from "./unread-badge.js";
 
@@ -14,13 +14,32 @@ const chatLink = document.getElementById("chatLink");
 let currentUser = null;
 let galleryImages = [];
 let activeImageIndex = 0;
+let currentListing = null;
+let favoriteListingIds = new Set();
 
-function renderAuth(user) {
+function syncPropertyFavoriteButton() {
+  if (!currentListing) {
+    return;
+  }
+
+  const favoriteBtn = document.getElementById("propertyFavoriteBtn");
+  if (!favoriteBtn) {
+    return;
+  }
+
+  const isFavorite = favoriteListingIds.has(currentListing.id);
+  favoriteBtn.classList.toggle("is-favorite", isFavorite);
+  favoriteBtn.textContent = isFavorite ? "♥" : "♡";
+  favoriteBtn.setAttribute("aria-label", isFavorite ? "Remove from favorites" : "Add to favorites");
+}
+
+async function renderAuth(user) {
   const isLoggedIn = Boolean(user);
+  const canPublish = isLoggedIn ? await isUserAdmin(user.uid) : false;
   authLink?.classList.toggle("hidden", isLoggedIn);
   logoutBtn?.classList.toggle("hidden", !isLoggedIn);
   userBadge?.classList.toggle("hidden", !isLoggedIn);
-  addPropertyLink?.classList.toggle("hidden", !isLoggedIn);
+  addPropertyLink?.classList.toggle("hidden", !canPublish);
   profileLink?.classList.toggle("hidden", !isLoggedIn);
   chatLink?.classList.toggle("hidden", !isLoggedIn);
 
@@ -30,8 +49,8 @@ function renderAuth(user) {
 }
 
 function formatPrice(price) {
-  const formatted = new Intl.NumberFormat("hu-HU").format(price || 0);
-  return `${formatted} HUF`;
+  const formatted = new Intl.NumberFormat("en-ET").format(price || 0);
+  return `${formatted} ETB`;
 }
 
 function firstImage(listing) {
@@ -252,7 +271,10 @@ function renderListing(listing) {
   root.innerHTML = `
     <section class="section-title-row">
       <h1>${escapeHtml(listing.title)}</h1>
-      <p class="price">${formatPrice(listing.price)}</p>
+      <div class="property-title-actions">
+        <p class="price">${formatPrice(listing.price)}</p>
+        <button id="propertyFavoriteBtn" class="favorite-btn ${favoriteListingIds.has(listing.id) ? "is-favorite" : ""}" type="button" aria-label="${favoriteListingIds.has(listing.id) ? "Remove from favorites" : "Add to favorites"}">${favoriteListingIds.has(listing.id) ? "♥" : "♡"}</button>
+      </div>
     </section>
 
     <section class="property-media panel">
@@ -305,6 +327,29 @@ function renderListing(listing) {
       <p id="lightboxCounter" class="lightbox-counter">1 / ${imageUrls.length}</p>
     </div>
   `;
+
+  const favoriteBtn = document.getElementById("propertyFavoriteBtn");
+  favoriteBtn?.addEventListener("click", async () => {
+    if (!currentUser || !currentListing) {
+      window.location.href = "auth.html";
+      return;
+    }
+
+    try {
+      const result = await toggleFavoriteListing(currentUser, currentListing.id);
+      if (result.isFavorite) {
+        favoriteListingIds.add(currentListing.id);
+      } else {
+        favoriteListingIds.delete(currentListing.id);
+      }
+      syncPropertyFavoriteButton();
+    } catch (error) {
+      const box = document.getElementById("interactionBox");
+      if (box) {
+        box.innerHTML += `<p class="auth-message">${escapeHtml(error?.message || "Could not update followed listing.")}</p>`;
+      }
+    }
+  });
 }
 
 function updateGalleryImage(index) {
@@ -493,10 +538,14 @@ async function bootstrap() {
     return;
   }
 
+  currentListing = listing;
+
   let viewTracked = false;
-  onAuthChanged((user) => {
+  onAuthChanged(async (user) => {
     currentUser = user;
-    renderAuth(user);
+    favoriteListingIds = user ? new Set(await fetchFavoriteListingIds(user.uid)) : new Set();
+    await renderAuth(user);
+    syncPropertyFavoriteButton();
     renderInteraction(listing);
 
     if (!viewTracked && (!user || user.uid !== listing.userId)) {

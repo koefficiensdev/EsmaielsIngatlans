@@ -1,4 +1,4 @@
-import { createListing } from "./data-service.js";
+import { createListing, isUserAdmin } from "./data-service.js";
 import { auth, firebaseReady, logoutUser, onAuthChanged } from "./firebase.js";
 
 const form = document.getElementById("addPropertyForm");
@@ -15,6 +15,7 @@ const addressInput = form.elements.namedItem("address");
 
 let currentUser = null;
 let isGeocoded = false;
+let canPublishListings = false;
 
 function parseOptionalNumber(value) {
   const text = String(value ?? "").trim();
@@ -94,7 +95,7 @@ async function geocodeAddress() {
     return;
   }
 
-  const searchQuery = `${address}, ${district ? district + ", " : ""}${city}, Hungary`;
+  const searchQuery = `${address}, ${district ? district + ", " : ""}${city}, Ethiopia`;
 
   try {
     setGeocodeMessage("Looking up coordinates...");
@@ -132,12 +133,23 @@ async function geocodeAddress() {
   }
 }
 
-onAuthChanged((user) => {
+onAuthChanged(async (user) => {
   currentUser = user;
 
   if (!user) {
     window.alert("Please log in first.");
     window.location.href = "auth.html";
+    return;
+  }
+
+  canPublishListings = await isUserAdmin(user.uid);
+  if (!canPublishListings) {
+    setMessage("Only admin accounts can publish properties.", true);
+    form.querySelectorAll("input, select, textarea, button").forEach((element) => {
+      if (element.id !== "logoutBtn") {
+        element.disabled = true;
+      }
+    });
     return;
   }
 
@@ -164,6 +176,11 @@ form.addEventListener("submit", async (event) => {
 
   if (!currentUser) {
     setMessage("You must be logged in to create a listing.", true);
+    return;
+  }
+
+  if (!canPublishListings) {
+    setMessage("Only admin accounts can publish properties.", true);
     return;
   }
 

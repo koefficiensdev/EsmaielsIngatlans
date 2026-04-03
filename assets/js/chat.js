@@ -1,4 +1,4 @@
-import { sendMessage, subscribeToConversations, subscribeToMessages } from "./data-service.js";
+import { markConversationRead, sendMessage, subscribeToConversations, subscribeToMessages } from "./data-service.js";
 import { logoutUser, onAuthChanged } from "./firebase.js";
 import { initUnreadBadge, markConversationSeen } from "./unread-badge.js";
 
@@ -131,6 +131,7 @@ function openConversation(conversationId) {
   messageForm.classList.remove("hidden");
   chatHeader.textContent = "Conversation";
   markConversationSeen(currentUser.uid, conversationId);
+  markConversationRead(conversationId, currentUser.uid).catch(() => {});
 
   disposeMessages();
   disposeMessages = subscribeToMessages(
@@ -141,6 +142,7 @@ function openConversation(conversationId) {
       if (activeConversation?.updatedAt?.seconds) {
         markConversationSeen(currentUser.uid, conversationId, activeConversation.updatedAt.seconds);
       }
+      markConversationRead(conversationId, currentUser.uid).catch(() => {});
     },
     (error) => {
       messagesRoot.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;

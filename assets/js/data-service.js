@@ -67,11 +67,20 @@ export async function fetchListings() {
   try {
     const listingsQuery = query(collection(db, LISTINGS_COLLECTION), orderBy("createdAt", "desc"), limit(120));
     const snapshot = await getDocs(listingsQuery);
-    const liveListings = snapshot.docs
-      .map((entry) => normalizeListing(entry.id, entry.data()))
-      .filter((listing) => listing.status === "active");
+    const liveListings = snapshot.docs.map((entry) => normalizeListing(entry.id, entry.data()));
+    const mergedById = new Map();
 
-    return [...liveListings, ...curatedListings].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    curatedListings.forEach((listing) => {
+      mergedById.set(listing.id, listing);
+    });
+
+    liveListings.forEach((listing) => {
+      mergedById.set(listing.id, listing);
+    });
+
+    return Array.from(mergedById.values())
+      .filter((listing) => listing.status === "active")
+      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
   } catch (error) {
     return curatedListings;
   }
@@ -98,6 +107,11 @@ export async function fetchListingById(id) {
 export async function createListing(payload, imageUrls, user) {
   if (!firebaseReady || !db) {
     throw new Error("Firebase is not configured. Add your project keys in assets/js/firebase-config.js.");
+  }
+
+  const canPublish = await isUserAdmin(user?.uid);
+  if (!canPublish) {
+    throw new Error("Only admin accounts can publish properties.");
   }
 
   const listing = {
@@ -152,18 +166,62 @@ export async function fetchUserListings(userId) {
   }
 }
 
+export async function fetchAdminListings() {
+  const curatedListings = sampleListings.map((listing) => ({ ...listing }));
+
+  if (!firebaseReady || !db) {
+    return curatedListings;
+  }
+
+  const listingsQuery = query(
+    collection(db, LISTINGS_COLLECTION),
+    orderBy("createdAt", "desc"),
+    limit(400)
+  );
+
+  const snapshot = await getDocs(listingsQuery);
+  const liveListings = snapshot.docs.map((entry) => normalizeListing(entry.id, entry.data()));
+
+  const mergedById = new Map();
+  [...curatedListings, ...liveListings].forEach((listing) => {
+    mergedById.set(listing.id, listing);
+  });
+
+  return Array.from(mergedById.values()).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+}
+
 export async function updateListing(listingId, payload, user) {
   if (!firebaseReady || !db || !listingId) {
     throw new Error("Firebase is not configured.");
   }
 
+  const isAdmin = await isUserAdmin(user.uid);
   const listingRef = doc(db, LISTINGS_COLLECTION, listingId);
   const listingDoc = await getDoc(listingRef);
   if (!listingDoc.exists()) {
-    throw new Error("Listing not found.");
+    const sampleListing = sampleListings.find((listing) => listing.id === listingId);
+    if (!sampleListing) {
+      throw new Error("Listing not found.");
+    }
+
+    if (!isAdmin) {
+      throw new Error("Only admin accounts can edit sample listings.");
+    }
+
+    const promotedListing = {
+      ...sampleListing,
+      ...payload,
+      userId: user.uid,
+      userEmail: user.email || sampleListing.userEmail || "",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    await setDoc(listingRef, promotedListing, { merge: true });
+    return;
   }
 
-  if (listingDoc.data().userId !== user.uid) {
+  if (!isAdmin && listingDoc.data().userId !== user.uid) {
     throw new Error("You can only edit your own listings.");
   }
 
@@ -184,7 +242,8 @@ export async function deleteListing(listingId, user) {
     throw new Error("Listing not found.");
   }
 
-  if (listingDoc.data().userId !== user.uid) {
+  const isAdmin = await isUserAdmin(user.uid);
+  if (!isAdmin && listingDoc.data().userId !== user.uid) {
     throw new Error("You can only delete your own listings.");
   }
 
@@ -237,6 +296,134 @@ export async function fetchUserProfile(userId) {
   return profileDoc.data();
 }
 
+export async function fetchFavoriteListingIds(userId) {
+  const profile = await fetchUserProfile(userId);
+  if (!profile || !Array.isArray(profile.favoriteListingIds)) {
+    return [];
+  }
+
+  return profile.favoriteListingIds.filter((value) => typeof value === "string" && value.trim().length > 0);
+}
+
+export async function toggleFavoriteListing(user, listingId) {
+  if (!firebaseReady || !db) {
+    throw new Error("Firebase is not configured.");
+  }
+
+  if (!user?.uid || !listingId) {
+    throw new Error("You must be logged in to follow listings.");
+  }
+
+  const currentIds = await fetchFavoriteListingIds(user.uid);
+  const alreadyFavorite = currentIds.includes(listingId);
+  const nextIds = alreadyFavorite
+    ? currentIds.filter((id) => id !== listingId)
+    : [...currentIds, listingId];
+
+  await setDoc(
+    doc(db, USERS_COLLECTION, user.uid),
+    {
+      favoriteListingIds: nextIds,
+      updatedAt: serverTimestamp()
+    },
+    { merge: true }
+  );
+
+  return { isFavorite: !alreadyFavorite, favoriteListingIds: nextIds };
+}
+
+export async function fetchListingsByIds(ids) {
+  if (!Array.isArray(ids) || !ids.length) {
+    return [];
+  }
+
+  const listings = await Promise.all(ids.map((id) => fetchListingById(id)));
+  return listings.filter((listing) => Boolean(listing) && listing.status !== "archived");
+}
+
+export async function fetchFavoriteCountsByListingIds(listingIds) {
+  const counts = {};
+  if (!Array.isArray(listingIds) || !listingIds.length) {
+    return counts;
+  }
+
+  const listingSet = new Set(listingIds);
+  listingIds.forEach((id) => {
+    counts[id] = 0;
+  });
+
+  if (!firebaseReady || !db) {
+    return counts;
+  }
+
+  const usersSnapshot = await getDocs(query(collection(db, USERS_COLLECTION), limit(600)));
+  usersSnapshot.docs.forEach((entry) => {
+    const favoriteIds = entry.data()?.favoriteListingIds;
+    if (!Array.isArray(favoriteIds)) {
+      return;
+    }
+
+    favoriteIds.forEach((listingId) => {
+      if (!listingSet.has(listingId)) {
+        return;
+      }
+
+      counts[listingId] = Number(counts[listingId] || 0) + 1;
+    });
+  });
+
+  return counts;
+}
+
+export async function fetchInquiryCountsByListingIds(ownerId, listingIds) {
+  const counts = {};
+  if (!Array.isArray(listingIds) || !listingIds.length) {
+    return counts;
+  }
+
+  const listingSet = new Set(listingIds);
+  listingIds.forEach((id) => {
+    counts[id] = 0;
+  });
+
+  if (!firebaseReady || !db) {
+    return counts;
+  }
+
+  const conversationsQuery = ownerId
+    ? query(
+      collection(db, CONVERSATIONS_COLLECTION),
+      where("ownerId", "==", ownerId),
+      limit(500)
+    )
+    : query(
+      collection(db, CONVERSATIONS_COLLECTION),
+      limit(1000)
+    );
+
+  const conversationsSnapshot = await getDocs(conversationsQuery);
+
+  conversationsSnapshot.docs.forEach((entry) => {
+    const listingId = entry.data()?.listingId;
+    if (!listingSet.has(listingId)) {
+      return;
+    }
+
+    counts[listingId] = Number(counts[listingId] || 0) + 1;
+  });
+
+  return counts;
+}
+
+export async function isUserAdmin(userId) {
+  if (!firebaseReady || !db || !userId) {
+    return false;
+  }
+
+  const profile = await fetchUserProfile(userId);
+  return profile?.isAdmin === true;
+}
+
 function conversationIdFor(listingId, uidA, uidB) {
   const pair = [uidA, uidB].sort().join("__");
   return `${listingId}__${pair}`;
@@ -268,6 +455,16 @@ export async function createOrGetConversation({ listingId, listingTitle, ownerId
   }
 
   return conversationId;
+}
+
+export async function markConversationRead(conversationId, userId) {
+  if (!firebaseReady || !db || !conversationId || !userId) {
+    return;
+  }
+
+  await updateDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId), {
+    [`readBy.${userId}`]: serverTimestamp()
+  });
 }
 
 export function subscribeToConversations(userId, onChange, onError) {

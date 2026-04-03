@@ -1,4 +1,4 @@
-import { fetchListings } from "./data-service.js";
+import { fetchFavoriteListingIds, fetchListings, isUserAdmin, toggleFavoriteListing } from "./data-service.js";
 import { firebaseReady, logoutUser, onAuthChanged } from "./firebase.js";
 import { initUnreadBadge } from "./unread-badge.js";
 
@@ -39,13 +39,15 @@ const userBadge = document.getElementById("userBadge");
 const addPropertyLink = document.getElementById("addPropertyLink");
 const profileLink = document.getElementById("profileLink");
 const chatLink = document.getElementById("chatLink");
+const postPropertyBtn = document.getElementById("postPropertyBtn");
 
 let allListings = [];
 let currentUser = null;
+let favoriteListingIds = new Set();
 
 function formatPrice(price) {
-  const formatted = new Intl.NumberFormat("hu-HU").format(price || 0);
-  return `${formatted} HUF`;
+  const formatted = new Intl.NumberFormat("en-ET").format(price || 0);
+  return `${formatted} ETB`;
 }
 
 function formatMode(mode) {
@@ -83,8 +85,10 @@ function renderListings(items) {
 
   emptyState.classList.add("hidden");
   const cards = items.map((listing) => {
+    const isFavorite = favoriteListingIds.has(listing.id);
     return `
       <article class="card">
+        <button class="favorite-btn ${isFavorite ? "is-favorite" : ""}" data-favorite-id="${escapeHtml(listing.id)}" type="button" aria-label="${isFavorite ? "Remove from favorites" : "Add to favorites"}">${isFavorite ? "♥" : "♡"}</button>
         <img src="${escapeHtml(firstImage(listing))}" alt="${escapeHtml(listing.title)}" loading="lazy" />
         <div class="card-body">
           <h3>${escapeHtml(listing.title)}</h3>
@@ -104,6 +108,50 @@ function renderListings(items) {
   });
 
   listingsGrid.innerHTML = cards.join("");
+
+  listingsGrid.querySelectorAll("[data-favorite-id]").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const listingId = button.getAttribute("data-favorite-id");
+      if (!listingId) {
+        return;
+      }
+
+      if (!currentUser) {
+        window.location.href = "auth.html";
+        return;
+      }
+
+      try {
+        const result = await toggleFavoriteListing(currentUser, listingId);
+        if (result.isFavorite) {
+          favoriteListingIds.add(listingId);
+        } else {
+          favoriteListingIds.delete(listingId);
+        }
+
+        button.classList.toggle("is-favorite", result.isFavorite);
+        button.textContent = result.isFavorite ? "♥" : "♡";
+        button.setAttribute("aria-label", result.isFavorite ? "Remove from favorites" : "Add to favorites");
+      } catch (error) {
+        const note = document.createElement("p");
+        note.className = "auth-message";
+        note.textContent = error?.message || "Could not update followed listing.";
+        document.querySelector("main")?.prepend(note);
+      }
+    });
+  });
+}
+
+async function syncFavorites(user) {
+  if (!user) {
+    favoriteListingIds = new Set();
+    return;
+  }
+
+  const ids = await fetchFavoriteListingIds(user.uid);
+  favoriteListingIds = new Set(ids);
 }
 
 function applyFilters() {
@@ -185,13 +233,15 @@ function applyFilters() {
   renderListings(sorted);
 }
 
-function renderAuth(user) {
+async function renderAuth(user) {
   currentUser = user;
   const isLoggedIn = Boolean(user);
+  const canPublish = isLoggedIn ? await isUserAdmin(user.uid) : false;
   authLink.classList.toggle("hidden", isLoggedIn);
   logoutBtn.classList.toggle("hidden", !isLoggedIn);
   userBadge.classList.toggle("hidden", !isLoggedIn);
-  addPropertyLink.classList.toggle("hidden", !isLoggedIn);
+  addPropertyLink.classList.toggle("hidden", !canPublish);
+  postPropertyBtn?.classList.toggle("hidden", !canPublish);
   profileLink.classList.toggle("hidden", !isLoggedIn);
   chatLink.classList.toggle("hidden", !isLoggedIn);
   userBadge.textContent = isLoggedIn ? user.displayName || user.email : "";
@@ -211,8 +261,10 @@ if (!firebaseReady) {
   }, 150);
 }
 
-onAuthChanged((user) => {
-  renderAuth(user);
+onAuthChanged(async (user) => {
+  await syncFavorites(user);
+  await renderAuth(user);
+  applyFilters();
 });
 
 searchBtn.addEventListener("click", applyFilters);

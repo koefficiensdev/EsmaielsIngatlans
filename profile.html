@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Profile | Esmaiel's Ingatlan</title>
+    <title>Profile | Esmaiel's Real Estate Agency</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet" />
@@ -11,9 +11,9 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="index.html">Esmaiel's Ingatlan</a>
+      <a class="brand" href="index.html">Esmaiel's Real Estate Agency</a>
       <nav class="main-nav">
-        <a href="add-property.html">Add Property</a>
+        <a href="add-property.html" id="addPropertyLink" class="hidden">Add Property</a>
         <a href="chat.html">Messages <span id="unreadBadge" class="unread-badge hidden">0</span></a>
       </nav>
       <div class="auth-area">
@@ -34,7 +34,7 @@
               <input type="text" name="displayName" required />
             </label>
             <label>Phone
-              <input type="text" name="phone" placeholder="+36 ..." />
+              <input type="text" name="phone" placeholder="+251 ..." />
             </label>
           </div>
           <label>Short Bio
@@ -45,12 +45,178 @@
         </form>
       </section>
 
-      <section class="section-title-row section-gap-top">
-        <h2>My Listings</h2>
+      <section class="panel section-gap-top">
+        <div class="section-title-row">
+          <h2>Account Security</h2>
+        </div>
+        <div class="account-security-grid">
+          <div class="account-security-card">
+            <h3>Email Verification</h3>
+            <p id="emailVerificationStatus" class="meta">Checking email status...</p>
+            <div class="profile-card-actions">
+              <button type="button" id="verifyEmailBtn" class="btn ghost">Send Verification Email</button>
+              <button type="button" id="refreshEmailStatusBtn" class="btn ghost">Refresh Status</button>
+            </div>
+          </div>
+
+          <form id="passwordForm" class="account-security-card">
+            <h3>Change Password</h3>
+            <label>Current Password
+              <input type="password" id="currentPassword" autocomplete="current-password" required minlength="6" />
+            </label>
+            <label>New Password
+              <input type="password" id="newPassword" autocomplete="new-password" required minlength="6" />
+            </label>
+            <label>Confirm New Password
+              <input type="password" id="confirmPassword" autocomplete="new-password" required minlength="6" />
+            </label>
+            <button type="submit" class="btn primary">Update Password</button>
+          </form>
+        </div>
+        <p id="accountMessage" class="auth-message"></p>
       </section>
-      <section>
+
+      <section id="myListingsHeading" class="section-title-row section-gap-top">
+        <h2 id="myListingsTitle">My Listings</h2>
+        <div class="search-filter-row">
+          <input type="search" id="myListingsSearch" class="search-input" placeholder="Search listings…" />
+          <button type="button" id="myListingsFilterBtn" class="btn ghost filter-toggle-btn">Filters ▾</button>
+        </div>
+      </section>
+      <div id="myListingsFilterPanel" class="profile-filter-panel hidden">
+        <div class="profile-filter-grid">
+          <label>Type
+            <select id="myFilterType">
+              <option value="">All types</option>
+              <option value="apartment">Apartment</option>
+              <option value="house">House</option>
+            </select>
+          </label>
+          <label>Mode
+            <select id="myFilterMode">
+              <option value="">Rent &amp; Sale</option>
+              <option value="rent">Rent</option>
+              <option value="sale">Sale</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="myFilterStatus">
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+          <label>Furnished
+            <select id="myFilterFurnished">
+              <option value="">Any</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </label>
+          <label>Parking
+            <select id="myFilterParking">
+              <option value="">Any</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </label>
+          <label>Rooms
+            <div class="filter-range">
+              <input type="number" id="myFilterRoomsMin" placeholder="Min" min="0" />
+              <span>&#8211;</span>
+              <input type="number" id="myFilterRoomsMax" placeholder="Max" min="0" />
+            </div>
+          </label>
+          <label>Price (ETB)
+            <div class="filter-range">
+              <input type="number" id="myFilterPriceMin" placeholder="Min" min="0" />
+              <span>&#8211;</span>
+              <input type="number" id="myFilterPriceMax" placeholder="Max" min="0" />
+            </div>
+          </label>
+          <label>Size (m²)
+            <div class="filter-range">
+              <input type="number" id="myFilterSizeMin" placeholder="Min" min="0" />
+              <span>&#8211;</span>
+              <input type="number" id="myFilterSizeMax" placeholder="Max" min="0" />
+            </div>
+          </label>
+          <div class="filter-actions">
+            <button type="button" id="myFilterClear" class="btn ghost">Clear filters</button>
+          </div>
+        </div>
+      </div>
+      <section id="myListingsSection">
         <div id="myListings" class="listings-grid"></div>
         <p id="emptyListings" class="empty-state hidden">You have not added listings yet.</p>
+      </section>
+
+      <section class="section-title-row section-gap-top">
+        <h2>Followed Listings</h2>
+        <div class="search-filter-row">
+          <input type="search" id="followedSearch" class="search-input" placeholder="Search followed listings…" />
+          <button type="button" id="followedFilterBtn" class="btn ghost filter-toggle-btn">Filters ▾</button>
+        </div>
+      </section>
+      <div id="followedFilterPanel" class="profile-filter-panel hidden">
+        <div class="profile-filter-grid">
+          <label>Type
+            <select id="flFilterType">
+              <option value="">All types</option>
+              <option value="apartment">Apartment</option>
+              <option value="house">House</option>
+            </select>
+          </label>
+          <label>Mode
+            <select id="flFilterMode">
+              <option value="">Rent &amp; Sale</option>
+              <option value="rent">Rent</option>
+              <option value="sale">Sale</option>
+            </select>
+          </label>
+          <label>Furnished
+            <select id="flFilterFurnished">
+              <option value="">Any</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </label>
+          <label>Parking
+            <select id="flFilterParking">
+              <option value="">Any</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </label>
+          <label>Rooms
+            <div class="filter-range">
+              <input type="number" id="flFilterRoomsMin" placeholder="Min" min="0" />
+              <span>&#8211;</span>
+              <input type="number" id="flFilterRoomsMax" placeholder="Max" min="0" />
+            </div>
+          </label>
+          <label>Price (ETB)
+            <div class="filter-range">
+              <input type="number" id="flFilterPriceMin" placeholder="Min" min="0" />
+              <span>&#8211;</span>
+              <input type="number" id="flFilterPriceMax" placeholder="Max" min="0" />
+            </div>
+          </label>
+          <label>Size (m²)
+            <div class="filter-range">
+              <input type="number" id="flFilterSizeMin" placeholder="Min" min="0" />
+              <span>&#8211;</span>
+              <input type="number" id="flFilterSizeMax" placeholder="Max" min="0" />
+            </div>
+          </label>
+          <div class="filter-actions">
+            <button type="button" id="flFilterClear" class="btn ghost">Clear filters</button>
+          </div>
+        </div>
+      </div>
+      <section>
+        <div id="followedListings" class="listings-grid"></div>
+        <p id="emptyFollowedListings" class="empty-state hidden">You are not following any listings yet.</p>
       </section>
     </main>
 

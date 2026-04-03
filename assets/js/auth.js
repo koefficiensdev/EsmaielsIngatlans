@@ -1,10 +1,12 @@
 import { firebaseReady, loginUser, onAuthChanged, registerUser } from "./firebase.js";
+import { fetchUserProfile, upsertUserProfile } from "./data-service.js";
 
 const showLoginTab = document.getElementById("showLoginTab");
 const showRegisterTab = document.getElementById("showRegisterTab");
 const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
 const authMessage = document.getElementById("authMessage");
+let authFlowInProgress = false;
 
 function setAuthMessage(text, isError = false) {
   authMessage.textContent = text;
@@ -45,12 +47,36 @@ function toggleAuthForms(showRegister) {
   setAuthMessage("");
 }
 
+async function ensureUserProfileDocument(user) {
+  if (!user?.uid) {
+    return;
+  }
+
+  const existingProfile = await fetchUserProfile(user.uid);
+  if (existingProfile) {
+    return;
+  }
+
+  await upsertUserProfile(user.uid, {
+    displayName: user.displayName || "",
+    email: user.email || "",
+    isAdmin: false
+  });
+}
+
 if (!firebaseReady) {
   setAuthMessage("Firebase keys are missing. Configure assets/js/firebase-config.js first.", true);
 }
 
-onAuthChanged((user) => {
-  if (user) {
+onAuthChanged(async (user) => {
+  if (user && !authFlowInProgress) {
+    try {
+      await ensureUserProfileDocument(user);
+    } catch (error) {
+      setAuthMessage(error?.message || "Could not initialize your profile document.", true);
+      return;
+    }
+
     setAuthMessage("You are already logged in. Redirecting to listings...");
     setTimeout(() => {
       window.location.href = "index.html";
@@ -63,6 +89,7 @@ showRegisterTab.addEventListener("click", () => toggleAuthForms(true));
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  authFlowInProgress = true;
   const formData = new FormData(loginForm);
   const email = formData.get("email");
   const password = formData.get("password");
@@ -75,25 +102,32 @@ loginForm.addEventListener("submit", async (event) => {
       window.location.href = "index.html";
     }, 500);
   } catch (error) {
+    authFlowInProgress = false;
     setAuthMessage(getReadableAuthError(error), true);
   }
 });
 
 registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  authFlowInProgress = true;
   const formData = new FormData(registerForm);
   const displayName = formData.get("displayName");
   const email = formData.get("email");
   const password = formData.get("password");
 
   try {
-    await registerUser(displayName, email, password);
+    const user = await registerUser(displayName, email, password);
+    await upsertUserProfile(user.uid, {
+      displayName: displayName?.toString().trim() || "",
+      isAdmin: false
+    });
     setAuthMessage("Account created. Redirecting...");
     registerForm.reset();
     setTimeout(() => {
       window.location.href = "index.html";
     }, 500);
   } catch (error) {
+    authFlowInProgress = false;
     setAuthMessage(getReadableAuthError(error), true);
   }
 });

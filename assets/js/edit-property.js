@@ -1,4 +1,4 @@
-import { fetchListingById, updateListing } from "./data-service.js";
+import { fetchListingById, isUserAdmin, updateListing } from "./data-service.js";
 import { auth, onAuthChanged } from "./firebase.js";
 
 const form = document.getElementById("editPropertyForm");
@@ -130,7 +130,8 @@ onAuthChanged(async (user) => {
     return;
   }
 
-  if (listing.userId !== user.uid) {
+  const adminUser = await isUserAdmin(user.uid);
+  if (!adminUser && listing.userId !== user.uid) {
     setMessage("You can only edit your own listing.", true);
     return;
   }
