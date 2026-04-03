@@ -53,7 +53,7 @@ onAuthChanged((user) => {
   if (user) {
     setAuthMessage("You are already logged in. Redirecting to listings...");
     setTimeout(() => {
-      window.location.href = "main.html";
+      window.location.href = "index.html";
     }, 700);
   }
 });
@@ -72,7 +72,7 @@ loginForm.addEventListener("submit", async (event) => {
     setAuthMessage("Logged in successfully. Redirecting...");
     loginForm.reset();
     setTimeout(() => {
-      window.location.href = "main.html";
+      window.location.href = "index.html";
     }, 500);
   } catch (error) {
     setAuthMessage(getReadableAuthError(error), true);
@@ -91,7 +91,7 @@ registerForm.addEventListener("submit", async (event) => {
     setAuthMessage("Account created. Redirecting...");
     registerForm.reset();
     setTimeout(() => {
-      window.location.href = "main.html";
+      window.location.href = "index.html";
     }, 500);
   } catch (error) {
     setAuthMessage(getReadableAuthError(error), true);
